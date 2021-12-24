@@ -3,10 +3,12 @@
 #define PIN_MQ135 A10 // MQ135 Analog Input Pin
 #define DHTPIN 2      // DHT Digital Input Pin
 #define DHTTYPE DHT11
+#define RELAY_PIN 8
 
 #define ALTITUDE 810.0
 
-#define LOOP_DELAY 5000
+#define LOOP_DELAY 5 * 1000
+#define HEAT_DELAY 30 * 1000
 
 Sensors sensors(DHTTYPE, DHTPIN, PIN_MQ135);
 
@@ -15,10 +17,18 @@ void setup()
   Serial.begin(9600);
 
   Serial.println("Booting...");
+  Serial.print("Heating for ");
+  Serial.print(HEAT_DELAY / 1000);
+  Serial.println(" seconds...");
 
-  sensors.init();
+  #ifdef RELAY_PIN
+    pinMode(RELAY_PIN, OUTPUT); // Relê para iniciar o circuito na fonte externa (opcional)
+    digitalWrite(RELAY_PIN, HIGH);
+  #endif
 
-  Serial.println("Booted");
+  sensors.init(HEAT_DELAY);
+
+  Serial.println("Booted!");
 }
 
 void loop()

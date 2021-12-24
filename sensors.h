@@ -25,7 +25,7 @@ private:
 public:
     Sensors(byte dht_type, byte dht_pin, byte mq_135_pin);
 
-    void init(int delayed = 5000);
+    void init(int heat_delay = 5000);
 
     double getTemperature();
     float getHumidity();
