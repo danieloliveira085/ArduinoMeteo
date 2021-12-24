@@ -1,80 +1,55 @@
-#include <MQ135.h>
-#include <DHT.h>
-#include <SFE_BMP180.h>
-#include <Wire.h>
+#include "sensors.h"
 
 #define PIN_MQ135 A10 // MQ135 Analog Input Pin
-#define DHTPIN 2 // DHT Digital Input Pin
+#define DHTPIN 2      // DHT Digital Input Pin
 #define DHTTYPE DHT11
 
 #define ALTITUDE 810.0
 
-MQ135 mq135_sensor(PIN_MQ135);
-DHT dht(DHTPIN, DHTTYPE);
-SFE_BMP180 bmp;
+#define LOOP_DELAY 5000
 
-void setup() {
+Sensors sensors(DHTTYPE, DHTPIN, PIN_MQ135);
+
+void setup()
+{
   Serial.begin(9600);
 
-  dht.begin();
-  bmp.begin();
+  Serial.println("Booting...");
 
-  Serial.println("Boot");
+  sensors.init();
+
+  Serial.println("Booted");
 }
 
-void loop() {
-  char status;
-  double temperature, pressure, humidity;
-  int tmpDelay;
-  
-  humidity = dht.readHumidity();
-  // temperature = dht.readTemperature();
-  status = bmp.startTemperature();
-  delay(status);
-  tmpDelay += status;
-  status = bmp.getTemperature(temperature);
-  if (status == 0) {
-    temperature = dht.readTemperature();  
-  }
+void loop()
+{
+  float humidity = sensors.getHumidity();
+  double temperature = sensors.getTemperature();
+  double pressure = sensors.getPressureInSeaLevel(ALTITUDE, temperature);
+  float co2 = sensors.getCO2(temperature, humidity);
 
-  status = bmp.startPressure(3);
-  delay(status);
-  tmpDelay += status;
-  status = bmp.getPressure(pressure,temperature);
-  if(pressure < 400) { //Tenta pegar a pressão novamente para confirmar
-    for (int i = 0; i < 3; i++) {
-      status = bmp.startPressure(3);
-      delay(status);
-      tmpDelay += status;
-      status = bmp.getPressure(pressure,temperature);
-      if (pressure >= 400) 
-        break;
-    }
-  }
-  
-  double p0 = bmp.sealevel(pressure, ALTITUDE);
-  float correctedPPM = mq135_sensor.getCorrectedPPM(temperature, humidity);
-
-  if(!isnan(humidity)) {
+  if (!isnan(humidity))
+  {
     Serial.print("Humidity: ");
     Serial.println(humidity);
   }
-  if(!isnan(temperature)) {
+  if (!isnan(temperature))
+  {
     Serial.print("Temperature: ");
     Serial.println(temperature);
   }
-  if(!isnan(pressure)) {
+  if (!isnan(pressure))
+  {
     Serial.print("Pressure: ");
-    Serial.println(p0);
-//    Serial.println(pressure);
+    Serial.println(pressure);
   }
-  if(!isnan(correctedPPM)) {
+  if (!isnan(co2))
+  {
     Serial.print("AirQuality: ");
-    Serial.println(correctedPPM);
+    Serial.println(co2);
   }
 
-  int dly = 5000 - tmpDelay;
-  if (dly > 0) {
-    delay(dly); 
-  }
+  int dly = LOOP_DELAY - sensors.getDelayed();
+  if (dly > 0)
+    delay(dly);
 }
