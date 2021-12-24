@@ -23,6 +23,8 @@ void setup()
 
 void loop()
 {
+  unsigned long start = millis();
+
   float humidity = sensors.getHumidity();
   double temperature = sensors.getTemperature();
   double pressure = sensors.getPressureInSeaLevel(ALTITUDE, temperature);
@@ -49,7 +51,9 @@ void loop()
     Serial.println(co2);
   }
 
-  int dly = LOOP_DELAY - sensors.getDelayed();
+  unsigned long stop = millis();
+
+  int dly = LOOP_DELAY - (stop - start);
   if (dly > 0)
     delay(dly);
 }

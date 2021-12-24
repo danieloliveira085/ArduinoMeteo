@@ -6,8 +6,6 @@ Sensors::Sensors(byte dht_type, byte dht_pin, byte mq_135_pin) :
     this->dht_type = dht_type;
     this->dht_pin = dht_pin;
     this->mq_135_pin = mq_135_pin;
-
-    this->delayed = 0;
 }
 
 void Sensors::init(int delayed = 5000) {
@@ -23,21 +21,15 @@ double Sensors::getTemperature() {
 
     status = bmp_180_sensor.startTemperature();
     delay(status);
-    delayed += status;
     status = bmp_180_sensor.getTemperature(temperature);
     if (status == 0 || isnan(temperature)) {
         temperature = dht_sensor.readTemperature();
-        delayed += 55; // tempo de inicialização do dht
     }
 
     return temperature;
 }
 
-float Sensors::getHumidity() {
-    delayed += 55; // tempo de inicialização do dht
-
-    return dht_sensor.readHumidity();
-}
+float Sensors::getHumidity() { return dht_sensor.readHumidity(); }
 
 double Sensors::getPressureInSeaLevel(double altitude, double temperature) {
     int status = 0;
@@ -45,7 +37,6 @@ double Sensors::getPressureInSeaLevel(double altitude, double temperature) {
 
     status = bmp_180_sensor.startPressure(3);
     delay(status);
-    delayed += status;
     status = bmp_180_sensor.getPressure(pressure, temperature);
     
     return bmp_180_sensor.sealevel(pressure, altitude);
@@ -56,11 +47,10 @@ float Sensors::getCO2(double temperature, double humidity) {
     
     if (correctedPPM < 400) // Tenta pegar a a proporção de co2 novamente para confirmar se é realmente menor que 400ppm
     {
-        for (int i = 0; i < 5; i++)
+        for (int i = 0; i < MQ135_RETRYS; i++)
         {
-        delay(400);
+        delay(MQ135_RETRY_DELAY_MS); //400ms até uma nova tentativa
         correctedPPM = mq_135_sensor.getCorrectedPPM(temperature, humidity);
-        delayed += 400;
         if (correctedPPM >= 400)
             break;
         }
