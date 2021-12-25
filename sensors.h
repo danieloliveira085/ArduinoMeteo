@@ -7,7 +7,6 @@
 #include <DHT.h>
 #include <SFE_BMP180.h>
 
-#define MQ135_RETRYS 8
 #define MQ135_RETRY_DELAY_MS 400
 
 class Sensors
@@ -22,6 +21,8 @@ private:
     DHT dht_sensor;
     MQ135 mq_135_sensor;
 
+    float old_gas_ppm = NAN;
+
 public:
     Sensors(byte dht_type, byte dht_pin, byte mq_135_pin);
 
@@ -30,7 +31,7 @@ public:
     double getTemperature();
     float getHumidity();
     double getPressureInSeaLevel(double altitude, double temperature);
-    float getCO2(double temperature, double humidity);
+    float getCO2(double temperature, double humidity, int retry_timeout = 0);
 };
 
 #endif

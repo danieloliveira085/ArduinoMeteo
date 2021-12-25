@@ -38,7 +38,7 @@ void loop()
   float humidity = sensors.getHumidity();
   double temperature = sensors.getTemperature();
   double pressure = sensors.getPressureInSeaLevel(ALTITUDE, temperature);
-  float co2 = sensors.getCO2(temperature, humidity);
+  float co2 = sensors.getCO2(temperature, humidity, LOOP_DELAY - (millis() - start));
 
   if (!isnan(humidity))
   {

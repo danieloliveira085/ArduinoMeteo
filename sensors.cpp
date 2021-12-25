@@ -46,18 +46,35 @@ double Sensors::getPressureInSeaLevel(double altitude, double temperature)
     return bmp_180_sensor.sealevel(pressure, altitude);
 }
 
-float Sensors::getCO2(double temperature, double humidity)
+// retry_timeout é quanto tempo essa função pode gastar além do necessário até conseguir um valor mais estável do mq-135
+// o padrão para esse valor é 0, o que desativa o sistema de tentativas
+float Sensors::getCO2(double temperature, double humidity, int retry_timeout = 0)
 {
+    int retrys = 0;
+    while (retry_timeout > 0)
+    {
+        retry_timeout -= MQ135_RETRY_DELAY_MS;
+        if (retry_timeout >= 0)
+            retrys++;
+    }
+
     float correctedPPM = mq_135_sensor.getCorrectedPPM(temperature, humidity);
 
-    if (correctedPPM < 400) // Tenta pegar a a proporção de co2 novamente para confirmar se é realmente menor que 400ppm
+    if (retrys > 0)
     {
-        for (int i = 0; i < MQ135_RETRYS; i++)
+        // Tenta pegar a a proporção de co2 novamente para confirmar se é realmente menor que 400ppm
+        // ou caso tenha uma variação para baixo em relação ao valor anterior (amenizando os picos)
+        if (correctedPPM < 400 || (isnan(old_gas_ppm) || correctedPPM < old_gas_ppm))
         {
-            delay(MQ135_RETRY_DELAY_MS); // 400ms até uma nova tentativa
-            correctedPPM = mq_135_sensor.getCorrectedPPM(temperature, humidity);
-            if (correctedPPM >= 400)
-                break;
+            for (int i = 0; i < retrys; i++)
+            {
+                delay(MQ135_RETRY_DELAY_MS);
+                correctedPPM = mq_135_sensor.getCorrectedPPM(temperature, humidity);
+                if (correctedPPM >= 400 && correctedPPM >= old_gas_ppm)
+                    break;
+            }
+
+            old_gas_ppm = correctedPPM;
         }
     }
 
