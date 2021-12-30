@@ -19,17 +19,16 @@ void Sensors::init(int heat_delay = 5000)
 double Sensors::getTemperature()
 {
     int status = 0;
-    double temperature = NAN;
+    double temperature = 0.0;
 
     status = bmp_180_sensor.startTemperature();
     delay(status);
     status = bmp_180_sensor.getTemperature(temperature);
-    if (status == 0 || isnan(temperature))
-    {
+    if (status == 0 || temperature == 0.0) {
         temperature = dht_sensor.readTemperature();
     }
 
-    return temperature;
+    return temperature == 0.0 ? NAN : temperature;
 }
 
 float Sensors::getHumidity() { return dht_sensor.readHumidity(); }
@@ -37,11 +36,15 @@ float Sensors::getHumidity() { return dht_sensor.readHumidity(); }
 double Sensors::getPressureInSeaLevel(double altitude, double temperature)
 {
     int status = 0;
-    double pressure = NAN;
+    double pressure = 0.0;
 
     status = bmp_180_sensor.startPressure(3);
     delay(status);
     status = bmp_180_sensor.getPressure(pressure, temperature);
+
+    if (pressure == 0.0) {
+        return NAN;
+    }
 
     return bmp_180_sensor.sealevel(pressure, altitude);
 }
@@ -62,15 +65,15 @@ float Sensors::getCO2(double temperature, double humidity, int retry_timeout = 0
 
     if (retrys > 0)
     {
-        // Tenta pegar a a proporção de co2 novamente para confirmar se é realmente menor que 400ppm
-        // ou caso tenha uma variação para baixo em relação ao valor anterior (amenizando os picos)
-        if (correctedPPM < 400 || (isnan(old_gas_ppm) || correctedPPM < old_gas_ppm))
+        // Tenta pegar a a proporção de co2 novamente para confirmar se é realmente menor que a quantidade de co2
+        // na atmosfera ou caso tenha uma variação para baixo em relação ao valor anterior (amenizando os picos)
+        if (correctedPPM < ATMOCO2 || (isnan(old_gas_ppm) || correctedPPM < old_gas_ppm))
         {
             for (int i = 0; i < retrys; i++)
             {
                 delay(MQ135_RETRY_DELAY_MS);
                 correctedPPM = mq_135_sensor.getCorrectedPPM(temperature, humidity);
-                if (correctedPPM >= 400 && correctedPPM >= old_gas_ppm)
+                if (correctedPPM >= ATMOCO2 && correctedPPM >= old_gas_ppm)
                     break;
             }
 
@@ -78,5 +81,5 @@ float Sensors::getCO2(double temperature, double humidity, int retry_timeout = 0
         }
     }
 
-    return correctedPPM;
+    return correctedPPM == 0.0 ? NAN : correctedPPM;
 }

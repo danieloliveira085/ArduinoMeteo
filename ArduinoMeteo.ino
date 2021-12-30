@@ -9,6 +9,7 @@
 
 #define LOOP_DELAY 5 * 1000
 #define HEAT_DELAY 30 * 1000
+#define RELAY_HIGH_DELAY 200
 
 Sensors sensors(DHTTYPE, DHTPIN, PIN_MQ135);
 
@@ -21,10 +22,11 @@ void setup()
   Serial.print(HEAT_DELAY / 1000);
   Serial.println(" seconds...");
 
-  #ifdef RELAY_PIN
-    pinMode(RELAY_PIN, OUTPUT); // Relê para iniciar o circuito na fonte externa (opcional)
-    digitalWrite(RELAY_PIN, HIGH);
-  #endif
+#ifdef RELAY_PIN
+  pinMode(RELAY_PIN, OUTPUT); // Relê para iniciar o circuito na fonte externa (opcional)
+  digitalWrite(RELAY_PIN, HIGH);
+  delay(RELAY_HIGH_DELAY); // Assegura que o circuito está devidamente energizado
+#endif
 
   sensors.init(HEAT_DELAY);
 
@@ -60,6 +62,8 @@ void loop()
     Serial.print("AirQuality: ");
     Serial.println(co2);
   }
+
+  Serial.flush(); // Garante que todas as tranmissões foram efetuadas
 
   unsigned long stop = millis();
 
